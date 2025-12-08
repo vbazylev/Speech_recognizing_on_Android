@@ -16,20 +16,24 @@
         android:theme="@style/Theme.Kurs"
         tools:targetApi="31">
         <activity
+            android:name="com.example.kurs.settings"
+            android:label="Настройки"
+            android:exported="false" />
+        <activity
             android:name=".history"
+            android:label="История"
             android:exported="false" />
         <activity
-            android:name=".DB"
+            android:name="com.example.kurs.DB"
             android:exported="false" />
         <activity
-            android:name=".Transcription"
+            android:name="com.example.kurs.Transcription"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.kurs.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

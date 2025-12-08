@@ -2,6 +2,7 @@ package com.example.kurs;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,6 +10,8 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,10 +19,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.appcompat.widget.Toolbar;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -37,11 +42,19 @@ public class MainActivity extends AppCompatActivity {
     AlertDialog.Builder alertSpeechDialog;
     AlertDialog alertDialog;
     private DB databaseHelper;
+    private SharedPreferences preferences;
+    private static final String PREFS_NAME = "AppSettings";
+    private static final String THEME_KEY = "theme_mode";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        applyTheme();
+
         setContentView(R.layout.activity_main);
+
 
         editText = findViewById(R.id.editText);
         imageView = findViewById(R.id.imageView);
@@ -94,7 +107,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onError(int error) {
-                alertDialog.dismiss();
+                if (alertDialog != null && alertDialog.isShowing()) {
+                    alertDialog.dismiss();
+                }
                 imageView.setImageResource(R.drawable.baseline_mic_24);
                 Toast.makeText(MainActivity.this, "Ошибка распознавания: " + error, Toast.LENGTH_SHORT).show();
             }
@@ -106,7 +121,9 @@ public class MainActivity extends AppCompatActivity {
                 if (arrayList != null && !arrayList.isEmpty()) {
                     editText.setText(arrayList.get(0));
                 }
-                alertDialog.dismiss();
+                if (alertDialog != null && alertDialog.isShowing()) {
+                    alertDialog.dismiss();
+                }
             }
 
             @Override
@@ -132,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Обработчик кнопки Сохранить
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -140,13 +156,28 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Обработчик кнопки История
         btnHistory.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 openHistoryActivity();
             }
         });
+    }
+
+    private void applyTheme() {
+        int themeMode = preferences.getInt(THEME_KEY, AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+
+        switch (themeMode) {
+            case AppCompatDelegate.MODE_NIGHT_NO:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                break;
+            case AppCompatDelegate.MODE_NIGHT_YES:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                break;
+            default:
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                break;
+        }
     }
 
     private void saveTranscription() {
@@ -175,11 +206,55 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    private void openSettingsActivity() {
+        Intent intent = new Intent(MainActivity.this, settings.class);
+        startActivity(intent);
+    }
+
     private void checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{
                     Manifest.permission.RECORD_AUDIO}, RecordAudioRequestCode);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_settings) {
+            openSettingsActivity();
+            return true;
+        } else if (id == R.id.action_about) {
+            showAboutDialog();
+            return true;
+        } else if (id == R.id.action_exit) {
+            finish();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void showAboutDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("О приложении");
+        builder.setMessage("Приложение для распознавания речи\n\n" +
+                "Автор: Базылев Владислав\n" +
+                "Версия: Финальная)\n\n" +
+                "Функции:\n" +
+                "• Распознавание речи\n" +
+                "• Сохранение текста\n" +
+                "• Просмотр истории\n" +
+                "• Настройки темы");
+        builder.setPositiveButton("OK", null);
+        builder.show();
     }
 
     @Override
@@ -194,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == RecordAudioRequestCode && grantResults.length > 0) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                Toast.makeText(this, "Permission Granted", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Разрешение предоставлено", Toast.LENGTH_LONG).show();
         }
     }
 }
